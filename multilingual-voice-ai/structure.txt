@@ -1,0 +1,14 @@
+ai_voice_bus/
+├── main.py                 # FastAPI server
+├── requirements.txt        # Python dependencies  
+├── utils/
+│   ├── __init__.py
+│   ├── whisper_handler.py  # Speech-to-text
+│   ├── nlp_handler.py      # Intent recognition
+│   ├── tts_handler.py      # Text-to-speech
+│   └── business_logic.py   # Bus info logic
+├── static/
+│   └── audio/              # Generated audio files
+├── twilio_audio/           # Downloaded recordings
+├── .env                    # Environment variables
+└── run.sh                  # Startup script

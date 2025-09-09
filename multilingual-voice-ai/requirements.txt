@@ -1,0 +1,25 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+httpx==0.25.2
+python-dotenv==1.0.0
+
+# AI/ML packages
+torch>=2.0.0
+torchaudio>=2.0.0
+transformers>=4.35.0
+accelerate>=0.25.0
+
+# Audio processing
+openai-whisper
+
+soundfile==0.12.1
+librosa==0.10.1
+pydub==0.25.1
+
+# For IndicBERT (optional, can use transformers)
+sentencepiece>=0.1.99
+
+# AI4Bharat TTS dependencies  
+numpy>=1.24.0
+scipy>=1.10.0
