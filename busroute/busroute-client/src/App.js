@@ -42,6 +42,14 @@ function App() {
   const [festivalAlert, setFestivalAlert] = useState(false);
   const [serviceAlerts, setServiceAlerts] = useState([]);
 
+  // AI Chat state
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+
+  // Voice states
+  const recognitionRef = useRef(null);
+  const [listening, setListening] = useState(false);
+
   const markersRef = useRef({});
   const mapRef = useRef(null);
   const selectedBusRef = useRef(null);
@@ -186,6 +194,59 @@ function App() {
     });
     alert("🚨 SOS Sent!");
   };
+
+  // AI Chat function
+  const askAi = async (queryParam) => {
+    const query = queryParam || aiQuery;
+    if (!query) return;
+    try {
+      const res = await axios.get(`${BASE}/ai_chat`, { params: { query } });
+      setAiResponse(res.data.response);
+    } catch (err) {
+      console.error("AI Chat failed:", err);
+      setAiResponse("Failed to get a response.");
+    }
+  };
+  
+
+  // Voice recognition setup
+  const startListening = () => {
+    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+      alert("Speech Recognition not supported in this browser.");
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setAiQuery(transcript);
+      setListening(false);
+      askAi(transcript); // <-- pass transcript directly
+    };
+    
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      setListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  };
+
+  // Text-to-speech for AI response
+  useEffect(() => {
+    if (aiResponse) {
+      const utterance = new SpeechSynthesisUtterance(aiResponse);
+      utterance.lang = "en-US";
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [aiResponse]);
 
   return (
     <div style={{ fontFamily: "Arial", backgroundColor: "#f4f8fc", minHeight: "100vh", padding: "1rem" }}>
@@ -334,6 +395,31 @@ function App() {
             <p>SOS Alerts: {adminStats.sos || 0}</p>
             {festivalAlert && <p>🎉 Festival Awareness: Expect Delays!</p>}
           </div>
+
+          {/* AI Chat Panel with Voice */}
+          <div style={{ marginTop: "2rem", padding: "1rem", backgroundColor: "#fff", borderRadius: "10px" }}>
+            <h3 style={{ color: "#003366" }}>🤖 AI Bus Assistant</h3>
+            <input
+              type="text"
+              value={aiQuery}
+              onChange={(e) => setAiQuery(e.target.value)}
+              placeholder="Ask about a bus, e.g., 'Where is bus 1?'"
+              style={{ width: "100%", padding: "0.5rem", marginBottom: "0.5rem" }}
+            />
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+              <button onClick={askAi} style={{ backgroundColor: "#003366", color: "#fff", padding: "0.5rem 1rem" }}>
+                Ask AI
+              </button>
+              <button 
+                onClick={startListening} 
+                style={{ backgroundColor: listening ? "#ff4d4f" : "#2ea44f", color: "#fff", padding: "0.5rem 1rem" }}
+              >
+                {listening ? "Listening..." : "🎤 Speak"}
+              </button>
+            </div>
+            {aiResponse && <p style={{ marginTop: "0.5rem", backgroundColor: "#eef", padding: "0.5rem", borderRadius: "5px" }}>{aiResponse}</p>}
+          </div>
+
         </div>
       </div>
     </div>

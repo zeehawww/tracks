@@ -1,38 +1,72 @@
-.App {
-  text-align: center;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f8fc;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.AppContainer {
+  padding: 1rem;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+h1 { color: #003366; margin-bottom: 1rem; }
+
+.searchForm { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.searchForm input { flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid #003366; transition: all 0.2s; }
+.searchForm input:focus { box-shadow: 0 0 5px #003366; }
+.searchForm button { padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; }
+.searchForm button:hover { opacity: 0.85; }
+
+.mainContent { display: flex; gap: 1rem; }
+
+.map-container {
+  height: 600px;
+  width: 70%;
+  border-radius: 12px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.right-panel {
+  width: 30%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap: 1rem;
 }
 
-.App-link {
-  color: #61dafb;
+.panel {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.panel h2, .panel h3 { color: #003366; margin-bottom: 0.5rem; }
+
+.alert {
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+
+.alert.offline { background-color: #f8d7da; color: #842029; }
+.alert.festival { background-color: #fff3cd; color: #664d03; }
+
+textarea, input {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #003366;
+  outline: none;
+  transition: all 0.2s;
+}
+textarea:focus, input:focus { box-shadow: 0 0 5px #003366; }
+
+.popupButtons button { margin-right: 4px; margin-top: 6px; }
+
+.complaintBtn { margin-top: 0.5rem; background-color: #d73a49; color: white; padding: 0.5rem; }
+.sosBtn { margin-top: 0.5rem; background-color: #ff0000; color: white; padding: 0.5rem; }
+
+.aiButtons { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.aiButtons button { padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; }
+.aiResponse { margin-top: 0.5rem; background-color: #f1f1f1; padding: 0.5rem; border-radius: 5px; }

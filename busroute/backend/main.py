@@ -1,13 +1,19 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from typing import List, Dict
 from pydantic import BaseModel
 import random
 import math
 import datetime
 import os
+import requests
+import re
+from twilio.twiml.voice_response import VoiceResponse, Gather
+from fastapi import Query
+from fastapi.responses import JSONResponse
+
 
 # Correct imports assuming `backend` is the package
 from . import buses, voice  # use relative imports inside a package
@@ -137,13 +143,6 @@ def distance(lat1, lon1, lat2, lon2):
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 # -------------------------------
-# Routes for updating & fetching buses
-# -------------------------------
-# ... keep the rest of your APIs unchanged
-
-
-
-# -------------------------------
 # Update bus positions (simulate movement)
 # -------------------------------
 @app.post("/buses/update")
@@ -180,7 +179,6 @@ def update_buses():
             bus.eta_min += 10
 
     return {"message": "Buses updated"}
-
 
 # -------------------------------
 # APIs
@@ -263,3 +261,92 @@ def admin_overview():
 @app.get("/offline/cache")
 def offline_cache():
     return {"buses": buses, "routes": routes}
+
+# -------------------------------
+# Twilio Voice Integration (Combined)
+# -------------------------------
+from io import BytesIO
+
+@app.post("/voice")
+async def handle_voice_call(request: Request):
+    """Answer incoming calls with a prompt to say the bus number."""
+    resp = VoiceResponse()
+    gather = Gather(
+        input="speech",
+        action="/process_speech",
+        method="POST",
+        timeout=5
+    )
+    gather.say("Welcome to Smart Bus Tracker. Please say your bus number now.")
+    resp.append(gather)
+    resp.say("Sorry, I did not receive any input. Goodbye!")
+    return Response(content=str(resp), media_type="application/xml")
+
+
+@app.post("/process_speech")
+async def process_speech(request: Request):
+    """
+    Process spoken input, fetch bus info, generate multilingual audio, and respond via Twilio.
+    Optional query param 'lang' to specify language code (e.g., 'ta' for Tamil).
+    """
+    form = await request.form()
+    speech_result = form.get("SpeechResult", "")
+    lang = form.get("lang", "en")  # default English
+    resp = VoiceResponse()
+
+    if speech_result:
+        match = re.search(r'\d+', speech_result)
+        if match:
+            bus_id = int(match.group())
+            try:
+                api_url = f"http://localhost:8000/buses/{bus_id}"
+                data = requests.get(api_url).json()
+                if "error" not in data:
+                    message = (
+                        f"Bus {bus_id} is currently {data['status']}. "
+                        f"Estimated arrival time is {data['eta_min']} minutes. "
+                        f"{'It is overcrowded.' if data['overcrowded'] else 'It is not overcrowded.'}"
+                    )
+                else:
+                    message = "Sorry, no information found for that bus."
+            except Exception:
+                message = "I couldn't reach the bus tracking system."
+        else:
+            message = "I didn't understand your bus number. Please try again later."
+    else:
+        message = "I didn't catch that. Goodbye!"
+
+    # Generate audio in requested language
+    audio_data = voice.generate_audio(message, lang=lang)
+    audio_bytes = BytesIO(audio_data)
+    os.makedirs("static", exist_ok=True)
+    with open("static/ai_response.wav", "wb") as f:
+        f.write(audio_data)
+
+    resp.play("/static/ai_response.wav")
+    return Response(content=str(resp), media_type="application/xml")
+@app.get("/ai_chat")
+def ai_chat(query: str = Query(..., description="Ask about a bus, e.g., 'Where is bus 1?'")):
+    """
+    Simple AI-like chat simulation for bus info.
+    Example queries:
+    - "Where is bus 1?"
+    - "When will bus 2 arrive?"
+    """
+    query_lower = query.lower()
+    match = re.search(r'\b(\d+)\b', query_lower)
+    if match:
+        bus_id = int(match.group())
+        bus_info = next((b for b in buses if b.bus_id == bus_id), None)
+        if bus_info:
+            response = (
+                f"Bus {bus_id} is currently {bus_info.status}. "
+                f"Estimated arrival time at next stop is {bus_info.eta_min} minutes. "
+                f"{'It is overcrowded.' if bus_info.overcrowded else 'It is not overcrowded.'}"
+            )
+        else:
+            response = f"Sorry, no information found for bus {bus_id}."
+    else:
+        response = "I couldn't understand the bus number in your query. Please try again."
+    
+    return JSONResponse(content={"query": query, "response": response})
